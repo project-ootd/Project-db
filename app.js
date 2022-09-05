@@ -147,27 +147,9 @@ app.listen(port, () => {
 
 // ↓↓ 공지사항 데이터 ↓↓
 
-const getData = async () => {
-  const data = await axios.get("http://localhost:4000/notices");
-};
-
-app.get("/notices/:id/:contentId", async (req, res) => {
-  // params 여러개 받기
-  const data = {
-    notices: {
-      id: req.params.id,
-      contentId: req.params.contentId,
-    },
-  };
-
-  const {
-    notices: { id, contentId },
-  } = data;
-});
-
 app.get("/notices", async (req, res) => {
   const [rows] = await pool.query("SELECT * FROM Notice ORDER BY id DESC");
-  getData();
+
   res.json(rows);
 });
 
@@ -253,7 +235,7 @@ app.patch("/notices/:id", async (req, res) => {
     `
     UPDATE Notice
     SET perform_date = ?,
-    text = ?
+    text = ?,
     WHERE id = ?
     `,
     [perform_date, text, id]
@@ -334,6 +316,6 @@ app.delete("/notices/:id", async (req, res) => {
     [id]
   );
   res.json({
-    msg: `${id}번 할일이 삭제되었습니다.`,
+    msg: `${id}번 공지사항이 삭제되었습니다.`,
   });
 });
