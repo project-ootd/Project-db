@@ -34,6 +34,7 @@ app.get("/test2", async (req, res) => {
   const [rows] = await pool.query(
     `
     SELECT * FROM product
+    
   `
   );
 
@@ -135,12 +136,34 @@ app.post("/product", async (req, res) => {
   `,
     [prdId]
   );
-  // console.log("prdRow", prdRow);
 
   res.json(prdRow);
   // res.send([prdRow]);
 });
+app.post("/SearchPage", async (req, res) => {
+  // const [prdRow] = await pool.query(
+  //   `
+  //   SELECT *
+  //   FROM product
 
+  //   `,
+  //   [prdName]
+  // );
+  const {
+    body: { search },
+  } = req;
+  var like = "%" + search + "%";
+  const [prdLow] = await pool.query(
+    `
+    SELECT *
+    FROM product
+    WHERE prdName LIKE ?;
+    `,
+    [like]
+  );
+  console.log(prdLow);
+  res.json(prdLow);
+});
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
