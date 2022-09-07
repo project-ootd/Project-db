@@ -141,14 +141,6 @@ app.post("/product", async (req, res) => {
   // res.send([prdRow]);
 });
 app.post("/SearchPage", async (req, res) => {
-  // const [prdRow] = await pool.query(
-  //   `
-  //   SELECT *
-  //   FROM product
-
-  //   `,
-  //   [prdName]
-  // );
   const {
     body: { search },
   } = req;
@@ -162,8 +154,11 @@ app.post("/SearchPage", async (req, res) => {
     [like]
   );
   console.log(prdLow);
-  res.json(prdLow);
+  if (search) {
+    res.json(prdLow);
+  }
 });
+
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
