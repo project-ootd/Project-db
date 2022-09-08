@@ -149,7 +149,7 @@ app.post("/SearchPage", async (req, res) => {
     `
     SELECT *
     FROM product
-    WHERE prdName LIKE ?;
+    WHERE prdName LIKE ?
     `,
     [like]
   );
@@ -157,6 +157,128 @@ app.post("/SearchPage", async (req, res) => {
   if (search) {
     res.json(prdLow);
   }
+});
+app.post("/cart", async (req, res) => {
+  const {
+    body: { prdId, userId },
+  } = req;
+
+  const [duplicate] = await pool.query(
+    `
+    SELECT *
+    FROM cart
+    WHERE prdId =? and userId = ?
+    `,
+    [prdId, userId]
+  );
+
+  // console.log("duplicate", duplicate);
+
+  if (duplicate.length == 0) {
+    const [row] = await pool.query(
+      `
+    INSERT INTO cart (prdId, userId, checked,amount ) VALUES (?,?, false, 1);
+    
+    `,
+      [prdId, userId]
+    );
+  } else {
+    res.json({
+      msg: "같은 상품 존재",
+    });
+  }
+});
+
+app.post("/cartlist", async (req, res) => {
+  const {
+    body: { userId },
+  } = req;
+
+  const [cartRow] = await pool.query(
+    `
+    SELECT *
+    FROM cart
+    WHERE userId = ?
+    `,
+    [userId]
+  );
+
+  res.json(cartRow);
+});
+
+app.patch("/amount/:prdId", async (req, res) => {
+  const { prdId } = req.params;
+  // const { setCount } = req.body;
+  const {
+    body: { setCount },
+  } = req;
+
+  console.log("setCount", setCount);
+  console.log("prdId", prdId);
+
+  await pool.query(
+    `
+    UPDATE cart SET amount = ? WHERE prdId = ?
+  `,
+
+    [setCount, prdId]
+  );
+
+  const [[cartRow]] = await pool.query(
+    `
+    SELECT *
+    FROM cart
+    WHERE prdId = ?
+    `,
+    [prdId]
+  );
+
+  res.json(cartRow);
+});
+
+app.post("/cartList2", async (req, res) => {
+  const {
+    body: { prdId },
+  } = req;
+
+  // console.log("prdId", prdId);
+
+  const [[cartRow]] = await pool.query(
+    `
+    SELECT *
+    FROM product
+    WHERE prdId = ?
+    `,
+    [prdId]
+  );
+
+  res.json(cartRow);
+  // console.log("cartRow", cartRow);
+});
+
+app.patch("/check/:userId/:prdId", async (req, res) => {
+  const { userId, prdId } = req.params;
+
+  console.log("userId", userId);
+
+  console.log("prdId", prdId);
+  const [[rows]] = await pool.query(
+    `
+    SELECT *
+  FROM cart where userId = ? and prdId = ?
+  `,
+    [userId, prdId]
+  );
+  await pool.query(
+    `
+  UPDATE cart
+  SET checked = ?
+  WHERE userId = ? and prdId =?
+  `,
+
+    [!rows.checked, userId, prdId]
+  );
+  res.send(userId);
 });
 
 app.listen(port, () => {
