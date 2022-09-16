@@ -284,3 +284,178 @@ app.patch("/check/:userId/:prdId", async (req, res) => {
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
+
+// ↓↓ 공지사항 데이터 ↓↓
+
+app.get("/notices", async (req, res) => {
+  const [rows] = await pool.query("SELECT * FROM Notice ORDER BY id DESC");
+
+  res.json(rows);
+});
+
+app.post("/notices", async (req, res) => {
+  const {
+    body: { text },
+  } = req;
+  await pool.query(
+    `
+  INSERT INTO Notice
+  SET reg_date = NOW(),
+  perform_date = '2022-05-18 07:00:00',
+  checked = 0,
+  text = ?;
+  `,
+    [text]
+  );
+  const [newRows] = await pool.query(`
+  SELECT *
+  FROM Notice
+  ORDER BY id
+  DESC
+  `);
+  res.json(newRows);
+});
+
+app.get("/notices/:id/", async (req, res) => {
+  //const id = req.params.id;
+  const { id } = req.params;
+
+  const [rows] = await pool.query(
+    `
+  SELECT *
+  FROM Notice
+  WHERE id = ?
+  `,
+    [id]
+  );
+  if (rows.length === 0) {
+    res.status(404).json({
+      msg: "not found",
+    });
+    return;
+  }
+
+  res.json(rows[0]);
+});
+
+app.patch("/notices/:id", async (req, res) => {
+  const { id } = req.params;
+  const { perform_date, text } = req.body;
+
+  const [rows] = await pool.query(
+    `
+    SELECT *
+    FROM Notice
+    WHERE id = ?
+    `,
+    [id]
+  );
+
+  if (rows.length === 0) {
+    res.status(404).json({
+      msg: "not found",
+    });
+  }
+
+  if (!perform_date) {
+    res.status(400).json({
+      msg: "perform_date required",
+    });
+    return;
+  }
+
+  if (!text) {
+    res.status(400).json({
+      msg: "text required",
+    });
+    return;
+  }
+
+  const [rs] = await pool.query(
+    `
+    UPDATE Notice
+    SET perform_date = ?,
+    text = ?,
+    WHERE id = ?
+    `,
+    [perform_date, text, id]
+  );
+
+  const [updatednotices] = await pool.query(
+    `
+    SELECT *
+    FROM Notice
+    ORDER BY id DESC
+    `
+  );
+  res.json(updatednotices);
+});
+
+app.patch("/notices/check/:id", async (req, res) => {
+  const { id } = req.params;
+  //id번 Notice가 없을 수도 있기 때문에
+  //SELECT * FROM으로 id값을 불러옴 → id가 없는 값을 불러온다면?
+  //if (!rows) 로 404에러를 할당하며 msg: "not found" 출력.
+  //또한, check 초기상태를 파악하기 위해 불러와야 함.
+  const [[rows]] = await pool.query(
+    `
+    SELECT *
+  FROM Notice WHERE id = ?
+  `,
+    [id]
+  );
+  if (!rows) {
+    res.status(404).json({
+      msg: "not found",
+    });
+    return;
+  }
+  //문제가 없다면? → 수정 mySQL 넣기
+  await pool.query(
+    `
+  UPDATE Notice
+  SET checked = ?
+  WHERE id = ?
+  `,
+    //check값은 어떻게 바꾸나?
+    //위에서 받은 초기값의 반전값 (0이면 1, 1이면 0)을 반영시켜줌.
+    [!rows.checked, id]
+  );
+  //값을 바꾼 후, 바꾼 값을 저장한 새로운 테이블을 다시 보여 줌.
+  const [updatedNotice] = await pool.query(
+    `
+      SELECT * FROM Notice ORDER BY id DESC`,
+    [id]
+  );
+  //반환시켜줌
+  res.json(updatedNotice);
+  //res.send(id);
+});
+
+app.delete("/notices/:id", async (req, res) => {
+  const { id } = req.params;
+
+  const [[NoticeRow]] = await pool.query(
+    `
+    SELECT *
+    FROM Notice
+    WHERE id = ?`,
+    [id]
+  );
+
+  if (NoticeRow === undefined) {
+    res.status(404).json({
+      msg: "not found",
+    });
+    return;
+  }
+
+  const [rs] = await pool.query(
+    `DELETE FROM Notice
+    WHERE id = ?`,
+    [id]
+  );
+  res.json({
+    msg: `${id}번 공지사항이 삭제되었습니다.`,
+  });
+});
