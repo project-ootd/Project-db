@@ -34,21 +34,9 @@ app.get("/test2", async (req, res) => {
   const [rows] = await pool.query(
     `
     SELECT * FROM product
-    
   `
   );
 
-  res.json(rows);
-});
-
-app.get("/KGDP", async (req, res) => {
-  const [rows] = await pool.query(
-    `
-    SELECT *
-    FROM product
-    WHERE category LIKE 'K%'
-    `
-  );
   res.json(rows);
 });
 
@@ -67,7 +55,7 @@ app.post("/test1/doLogin", async (req, res) => {
   `,
     [id, pw]
   );
-  console.log(userRow);
+  // console.log(userRow);
   if (userRow) {
     return res.send(true);
   }
@@ -99,13 +87,14 @@ app.post("/test1", async (req, res) => {
 
   res.json(rows);
 });
+
 app.post("/prdlist", async (req, res) => {
   const {
     body: { prdno },
   } = req;
   // console.log("prdno", prdno);
   var like = "%" + prdno + "%";
-  console.log("like", like);
+  // console.log("like", like);
 
   const [prdRow] = await pool.query(
     `
@@ -115,18 +104,16 @@ app.post("/prdlist", async (req, res) => {
   `,
     [like]
   );
-  // console.log("prdRow", prdRow);
 
   res.json(prdRow);
-  console.log(prdRow);
-  // res.send([prdRow]);
+  // console.log(prdRow);
 });
 
 app.post("/product", async (req, res) => {
   const {
     body: { prdId },
   } = req;
-  console.log("prdId", prdId);
+  // console.log("prdId", prdId);
 
   const [[prdRow]] = await pool.query(
     `
@@ -138,26 +125,8 @@ app.post("/product", async (req, res) => {
   );
 
   res.json(prdRow);
-  // res.send([prdRow]);
 });
-app.post("/SearchPage", async (req, res) => {
-  const {
-    body: { search },
-  } = req;
-  var like = "%" + search + "%";
-  const [prdLow] = await pool.query(
-    `
-    SELECT *
-    FROM product
-    WHERE prdName LIKE ?
-    `,
-    [like]
-  );
-  console.log(prdLow);
-  if (search) {
-    res.json(prdLow);
-  }
-});
+
 app.post("/cart", async (req, res) => {
   const {
     body: { prdId, userId },
@@ -172,15 +141,24 @@ app.post("/cart", async (req, res) => {
     [prdId, userId]
   );
 
-  // console.log("duplicate", duplicate);
+  const [[product]] = await pool.query(
+    `
+    SELECT *
+    FROM product
+    WHERE prdId =?
+    `,
+    [prdId]
+  );
+
+  console.log(product.prdPrice);
 
   if (duplicate.length == 0) {
     const [row] = await pool.query(
       `
-    INSERT INTO cart (prdId, userId, checked,amount ) VALUES (?,?, false, 1);
+    INSERT INTO cart (prdId, userId, checked,amount, price ) VALUES (?,?, false, 1, ?);
     
     `,
-      [prdId, userId]
+      [prdId, userId, product.prdPrice]
     );
   } else {
     res.json({
@@ -210,18 +188,19 @@ app.patch("/amount/:prdId", async (req, res) => {
   const { prdId } = req.params;
   // const { setCount } = req.body;
   const {
-    body: { setCount },
+    body: { count, price },
   } = req;
 
-  console.log("setCount", setCount);
-  console.log("prdId", prdId);
+  console.log("count", req.body.count);
+
+  console.log("price", req.body.price);
 
   await pool.query(
     `
-    UPDATE cart SET amount = ? WHERE prdId = ?
+    UPDATE cart SET amount = ?, price = ? WHERE prdId = ?
   `,
 
-    [setCount, prdId]
+    [count, price, prdId]
   );
 
   const [[cartRow]] = await pool.query(
@@ -254,6 +233,38 @@ app.post("/cartList2", async (req, res) => {
 
   res.json(cartRow);
   // console.log("cartRow", cartRow);
+});
+app.post("/SearchPage", async (req, res) => {
+  const {
+    body: { search },
+  } = req;
+  var like = "%" + search + "%";
+  const [prdLow] = await pool.query(
+    `
+    SELECT *
+    FROM product
+    WHERE prdName LIKE ?
+    `,
+    [like]
+  );
+  console.log(prdLow);
+  if (search) {
+    res.json(prdLow);
+  }
+});
+
+app.post("/totalPrice", async (req, res) => {
+  const {
+    body: { userId },
+  } = req;
+
+  const [[totalPrice]] = await pool.query(
+    `
+    SELECT SUM(price) AS price FROM cart WHERE userId = ?`,
+    [userId]
+  );
+
+  res.json(totalPrice);
 });
 
 app.patch("/check/:userId/:prdId", async (req, res) => {
