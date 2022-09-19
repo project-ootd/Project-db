@@ -1,4 +1,4 @@
-import express from "express";
+import express, { query } from "express";
 import mysql from "mysql2/promise";
 import cors from "cors";
 import bodyParser from "body-parser";
@@ -464,6 +464,17 @@ app.delete("/notices/:id", async (req, res) => {
   res.json({
     msg: `${id}번 공지사항이 삭제되었습니다.`,
   });
+});
+app.post("/SBP", async (req, res) => {
+  const Cart = req.params;
+
+  const [CartRow] = await pool.query(
+    `
+    SELECT * FROM product;
+    `,
+    [prdId]
+  );
+  res.json(CartRow);
 });
 
 app.listen(port, () => {
