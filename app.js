@@ -510,82 +510,100 @@ app.get("/SBP", async (req, res) => {
     `
     SELECT * FROM 
     cart 
-    `,
-    [prdId]
+    `
   );
   res.json(ItemList);
 });
-app.patch("/addHeart", async (req, res) => {
-  const {
-    body: { prdId, userId, checked },
-  } = req;
+// app.patch("/addHeart", async (req, res) => {
+//   const {
+//     body: { prdId, userId, checked },
+//   } = req;
 
-  const [duplicate] = await pool.query(
-    `
-    SELECT *
-    FROM heart
-    WHERE prdId =? and userId = ?
-    `,
-    [prdId, userId]
-  );
+//   const [duplicate] = await pool.query(
+//     `
+//     SELECT *
+//     FROM heart
+//     WHERE prdId =? and userId = ?
+//     `,
+//     [prdId, userId]
+//   );
 
-  const [[product]] = await pool.query(
+//   const [[product]] = await pool.query(
+//     `
+//     SELECT *
+//     FROM product
+//     WHERE prdId =?
+//     `,
+//     [prdId]
+//   );
+
+//   if (duplicate.length == 0) {
+//     const [row] = await pool.query(
+//       `
+//     INSERT INTO heart (prdId, userId, checked) VALUES (?,?, ?);
+
+//     `,
+//       [prdId, userId, !checked]
+//     );
+//   } else {
+//     const [row] = await pool.query(
+//       `
+//       UPDATE heart SET checked = ? WHERE prdId = ? AND userId = ?
+
+//     `,
+//       [!checked, prdId, userId]
+//     );
+//   }
+// });
+
+// app.post("/getHeart", async (req, res) => {
+//   const {
+//     body: { userId, prdId },
+//   } = req;
+//   const [[prdLow]] = await pool.query(
+//     `
+//     SELECT *
+//     FROM heart
+//     WHERE userId =? and prdId =?
+//     `,
+//     [userId, prdId]
+//   );
+
+//   res.json(prdLow);
+// });
+
+// app.post("/HeartCount", async (req, res) => {
+//   const {
+//     body: { prdId },
+//   } = req;
+//   const [[prdLow]] = await pool.query(
+//     `
+//     SELECT count(checked) as checked FROM heart WHERE prdId = ? AND (checked = 1 OR checked = TRUE);
+//     `,
+//     [prdId]
+//   );
+
+//   res.json(prdLow);
+//   console.log(prdLow);
+// });
+app.delete("/SBP/:prdId", async (req, res) => {
+  const { prdId } = req.params;
+
+  const [[cartRemove]] = await pool.query(
     `
-    SELECT *
-    FROM product
-    WHERE prdId =?
+    SELECT * FROM cart
+    WHERE prdId = ?
     `,
     [prdId]
   );
 
-  if (duplicate.length == 0) {
-    const [row] = await pool.query(
-      `
-    INSERT INTO heart (prdId, userId, checked) VALUES (?,?, ?);
-    
-    `,
-      [prdId, userId, !checked]
-    );
-  } else {
-    const [row] = await pool.query(
-      `
-      UPDATE heart SET checked = ? WHERE prdId = ? AND userId = ? 
-    
-    `,
-      [!checked, prdId, userId]
-    );
-  }
-});
-
-app.post("/getHeart", async (req, res) => {
-  const {
-    body: { userId, prdId },
-  } = req;
-  const [[prdLow]] = await pool.query(
+  const [Remove] = await pool.query(
     `
-    SELECT *
-    FROM heart
-    WHERE userId =? and prdId =?
-    `,
-    [userId, prdId]
-  );
-
-  res.json(prdLow);
-});
-
-app.post("/HeartCount", async (req, res) => {
-  const {
-    body: { prdId },
-  } = req;
-  const [[prdLow]] = await pool.query(
-    `
-    SELECT count(checked) as checked FROM heart WHERE prdId = ? AND (checked = 1 OR checked = TRUE);
+    DELETE FROM cart
+    WHERE prdId = ?
     `,
     [prdId]
   );
-
-  res.json(prdLow);
-  console.log(prdLow);
 });
 
 app.listen(port, () => {
