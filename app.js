@@ -355,7 +355,7 @@ app.get("/NoticeContent", async (req, res) => {
   res.json(rows[0]);
 });
 
-app.get("/noticelimit", async (req, res) => {
+app.get("/mainNotice", async (req, res) => {
   const [rows] = await pool.query(
     `
   SELECT *
@@ -363,7 +363,7 @@ app.get("/noticelimit", async (req, res) => {
   `
   );
 
-  res.json(rows[0]);
+  res.json(rows);
 });
 
 app.get("/NoticeContent/:id", async (req, res) => {
