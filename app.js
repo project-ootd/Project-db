@@ -293,25 +293,25 @@ app.patch("/check/:userId/:prdId", async (req, res) => {
 });
 // ↓↓ 공지사항 데이터 ↓↓
 
-app.get("/notices", async (req, res) => {
+app.get("/notice", async (req, res) => {
   const [rows] = await pool.query("SELECT * FROM Notice ORDER BY id DESC");
 
   res.json(rows);
 });
 
-app.post("/notices", async (req, res) => {
+app.post("/notice", async (req, res) => {
   const {
-    body: { text },
+    body: { contents },
   } = req;
   await pool.query(
     `
   INSERT INTO Notice
   SET reg_date = NOW(),
-  perform_date = '2022-05-18 07:00:00',
+  title = '2022-05-18 07:00:00',
   checked = 0,
-  text = ?;
+  contents = ?;
   `,
-    [text]
+    [contents]
   );
   const [newRows] = await pool.query(`
   SELECT *
@@ -322,7 +322,51 @@ app.post("/notices", async (req, res) => {
   res.json(newRows);
 });
 
-app.get("/notices/:id/", async (req, res) => {
+app.get("/notice/:id/", async (req, res) => {
+  //const id = req.params.id;
+  const { id } = req.params;
+
+  const [rows] = await pool.query(
+    `
+  SELECT id, reg_date, title, contents
+  FROM Notice
+  WHERE id = ?
+  `,
+    [id]
+  );
+  if (rows.length === 0) {
+    res.status(404).json({
+      msg: "not found",
+    });
+    return;
+  }
+
+  res.json(rows[0]);
+});
+
+app.get("/NoticeContent", async (req, res) => {
+  const [rows] = await pool.query(
+    `
+  SELECT *
+  FROM Notice
+  `
+  );
+
+  res.json(rows[0]);
+});
+
+app.get("/noticelimit", async (req, res) => {
+  const [rows] = await pool.query(
+    `
+  SELECT *
+  FROM Notice ORDER BY id DESC LIMIT 5
+  `
+  );
+
+  res.json(rows[0]);
+});
+
+app.get("/NoticeContent/:id", async (req, res) => {
   //const id = req.params.id;
   const { id } = req.params;
 
@@ -344,9 +388,37 @@ app.get("/notices/:id/", async (req, res) => {
   res.json(rows[0]);
 });
 
-app.patch("/notices/:id", async (req, res) => {
+app.get("/notice", async (req, res) => {
+  const [rows] = await pool.query(`SELECT * FROM Notice`);
+
+  res.json(rows);
+});
+
+app.post("/notice", async (req, res) => {
+  const {
+    body: { title, contents },
+  } = req;
+  await pool.query(
+    `
+  INSERT INTO Notice2
+  SET reg_date = NOW(),
+  title = ?,
+  contents = ?;
+  `,
+    [title, contents]
+  );
+  const [newRows] = await pool.query(`
+  SELECT *
+  FROM Notice
+  ORDER BY id
+  DESC
+  `);
+  res.json(newRows);
+});
+
+app.patch("/notice/:id", async (req, res) => {
   const { id } = req.params;
-  const { perform_date, text } = req.body;
+  const { title, contents } = req.body;
 
   const [rows] = await pool.query(
     `
@@ -363,16 +435,16 @@ app.patch("/notices/:id", async (req, res) => {
     });
   }
 
-  if (!perform_date) {
+  if (!title) {
     res.status(400).json({
-      msg: "perform_date required",
+      msg: "title required",
     });
     return;
   }
 
-  if (!text) {
+  if (!contents) {
     res.status(400).json({
-      msg: "text required",
+      msg: "contents required",
     });
     return;
   }
@@ -380,11 +452,11 @@ app.patch("/notices/:id", async (req, res) => {
   const [rs] = await pool.query(
     `
     UPDATE Notice
-    SET perform_date = ?,
-    text = ?,
+    SET title = ?,
+    contents = ?,
     WHERE id = ?
     `,
-    [perform_date, text, id]
+    [title, contents, id]
   );
 
   const [updatednotices] = await pool.query(
@@ -397,7 +469,7 @@ app.patch("/notices/:id", async (req, res) => {
   res.json(updatednotices);
 });
 
-app.patch("/notices/check/:id", async (req, res) => {
+app.patch("/notice/check/:id", async (req, res) => {
   const { id } = req.params;
   //id번 Notice가 없을 수도 있기 때문에
   //SELECT * FROM으로 id값을 불러옴 → id가 없는 값을 불러온다면?
@@ -438,7 +510,7 @@ app.patch("/notices/check/:id", async (req, res) => {
   //res.send(id);
 });
 
-app.delete("/notices/:id", async (req, res) => {
+app.delete("/notice/:id", async (req, res) => {
   const { id } = req.params;
 
   const [[NoticeRow]] = await pool.query(
@@ -609,5 +681,3 @@ app.delete("/SBP/:prdId", async (req, res) => {
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
-
-// ↓↓ 공지사항 데이터 ↓↓
